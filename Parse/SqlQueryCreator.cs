@@ -7,48 +7,45 @@ namespace Parse
 {
     class SqlQueryCreator
     {
-        public string PathErrorLog { get; set; }
+        public string InputFilePath { get; set; }
 
-        public string PathSnilsLog { get; set; }
-
-        private ICollection<string> GetErrorsSNILS()
+        private string GetFioCod()
         {
-            ICollection<string> result = new List<string>();
-            ICollection<string> linesErr = new List<string>();
-            ICollection<string> lineSnl = new List<string>();
-            linesErr = File.ReadAllLines(PathErrorLog);
-            lineSnl = File.ReadAllLines(PathSnilsLog);
-            foreach (var s in linesErr)
+            string result = "SELECT ID FROM F2 WHERE ";
+            var linesStrFioCode = File.ReadAllLines(InputFilePath);
+            foreach (var s in linesStrFioCode)
             {
-                List<string> list = new List<string>();
-                list = s.Split(';').Where(ss => ss.Equals(ss)).ToList();
-                foreach(var sl in lineSnl)
+                if (s == "" || s == null)
+                    break;
+                else
                 {
-                    List<string> listn = new List<string>();
-                    listn = sl.Split(';').Where(q => q.Equals(q)).ToList();
-                    if (listn.Contains(list.FirstOrDefault()))
-                    {
-                        result.Add(listn.ElementAt(1));
-                        if(listn.ElementAt(1).Equals(listn.ElementAt(2)))
-                        {
-                            result.Add(listn.ElementAt(2));
-                        }
-                    }
+                    List<string> list = new List<string>();
+                    list = s.Split(';').Where(ss => ss.Equals(ss)).ToList();
+                    result += "(Famil = '" + list[0] + "' AND IMJA = '" + list[1] + "' AND OTCH = '" + list[2] + "' AND DROG = '" + list[3] + "') OR ";
                 }
             }
-            return result.Distinct().ToList();
+            return result + " (Famil = 'XXXXXX' AND IMJA = 'XXXXX' AND OTCH = 'XXXXXX')";
         }
 
-        public string CreateQuerySQL()
+        private string CreateInsertSqlQuery(string codePU)
         {
-            List<string> list = new List<string>();
-            list = GetErrorsSNILS().ToList();
-            string result = "SELECT NPS FROM F2 WHERE NPS = '";
-            foreach(var r in list)
+            string result = "", str = "Insert into f1 (f2_id, isu, datisun, pr, datpkor, notice, pr2) ";
+            var lineStrFioCode = File.ReadAllLines(InputFilePath);
+            foreach(var s in lineStrFioCode)
             {
-                result += r + "' OR NPS = '";
+                result += str + " \n values ('" + s + "' , '"+ codePU + "' , '01.01.2015', '', '01.01.2015', '', 'Р')" + "\n";
             }
             return result;
+        }
+
+        public string CreateFirstQuerySQL()
+        {
+            return GetFioCod();
+        }
+
+        public string CreateSecondQuerySQL(string codePU)
+        {
+            return CreateInsertSqlQuery(codePU);
         }
     }
 }
